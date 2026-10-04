@@ -271,3 +271,8 @@ if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch
 </script>
 </body>
 </html>
+setInterval(() => {
+  if (document.visibilityState === "visible" && $("apiKey").value.trim()) {
+    run();
+  }
+}, 5 * 60 * 1000);
