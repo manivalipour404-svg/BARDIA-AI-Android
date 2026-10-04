@@ -230,6 +230,8 @@ function signal(b){
 }
 
 async function run(){
+  const now = new Date();
+  $("log").textContent = "آخرین بررسی: " + now.toLocaleTimeString("fa-IR");
   $("refresh").disabled=true; $("conn").textContent="CONNECTING…"; $("engine").textContent="درحال دریافت XAU/USD M5";
   try{
     const bars=await fetchBars();
