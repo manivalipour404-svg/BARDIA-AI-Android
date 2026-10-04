@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090A12">
+  <meta name="description" content="BARDIA AI — XAUUSD M5 Signal Engine">
+  <link rel="manifest" href="manifest.json">
+  <title>BARDIA AI</title>
+  <style>
+    :root{
+      --bg:#070811; --card:#0e1120; --card2:#13172a; --text:#f5f7ff;
+      --muted:#9aa3bb; --purple:#8b5cf6; --purple2:#c084fc;
+      --green:#39d98a; --red:#ff5d73; --yellow:#f6c453; --line:#252b43;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(circle at 20% -10%,rgba(139,92,246,.24),transparent 35%),var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    .wrap{max-width:760px;margin:auto;padding:18px 14px 34px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{font-size:28px;font-weight:900;letter-spacing:.8px}
+    .pill{font-size:12px;color:#e9dcff;background:rgba(139,92,246,.13);border:1px solid rgba(139,92,246,.35);padding:7px 10px;border-radius:999px}
+    .sub{color:var(--muted);font-size:13px;margin-top:3px}
+    .card{background:linear-gradient(180deg,rgba(19,23,42,.95),rgba(14,17,32,.96));border:1px solid var(--line);border-radius:20px;padding:17px;margin-top:14px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+    .signal{text-align:center;padding:24px 16px}
+    .status{font-size:40px;font-weight:950;letter-spacing:1px;margin:2px 0 9px}
+    .wait{color:var(--yellow)} .buy{color:var(--green)} .sell{color:var(--red)}
+    .meta{color:var(--muted);font-size:13px}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}
+    .box{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:13px}
+    .label{font-size:12px;color:var(--muted)} .value{font-size:20px;font-weight:850;margin-top:5px}
+    .tp{color:var(--green)} .sl{color:var(--red)}
+    .row{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    button{border:0;border-radius:14px;padding:13px 15px;font-weight:800;font-size:15px;color:white;background:linear-gradient(135deg,#7c3aed,#a855f7);width:100%;cursor:pointer}
+    button.secondary{background:#1a1f35;border:1px solid var(--line);color:#e8eaf3}
+    .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px}
+    input{width:100%;background:#080b17;border:1px solid var(--line);border-radius:12px;padding:12px;color:white;outline:none}
+    .small{font-size:11px;color:var(--muted);line-height:1.7}
+    .tag{padding:7px 9px;border-radius:10px;background:#171c31;border:1px solid var(--line);font-size:12px;color:#d6daf0}
+    .features{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .log{max-height:170px;overflow:auto;font-size:12px;color:#b4bbd0;line-height:1.7;background:#080b15;padding:10px;border-radius:12px}
+    .hidden{display:none}
+    @media(min-width:620px){.grid{grid-template-columns:repeat(4,1fr)}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <div class="brand">BARDIA AI</div>
+      <div class="sub">XAUUSD • M5 • Signal Engine</div>
+    </div>
+    <div class="pill" id="conn">OFFLINE</div>
+  </div>
+
+  <div class="card signal">
+    <div id="status" class="status wait">WAIT</div>
+    <div id="reason" class="meta">برای شروع، کلید API را وارد کن و «دریافت سیگنال» را بزن.</div>
+    <div id="updated" class="small" style="margin-top:7px">—</div>
+
+    <div class="grid">
+      <div class="box"><div class="label">Entry</div><div class="value" id="entry">—</div></div>
+      <div class="box"><div class="label">SL</div><div class="value sl" id="sl">—</div></div>
+      <div class="box"><div class="label">TP1</div><div class="value tp" id="tp1">—</div></div>
+      <div class="box"><div class="label">TP2</div><div class="value tp" id="tp2">—</div></div>
+      <div class="box"><div class="label">RR</div><div class="value" id="rr">—</div></div>
+      <div class="box"><div class="label">قدرت</div><div class="value" id="strength">—</div></div>
+      <div class="box"><div class="label">RSI</div><div class="value" id="rsi">—</div></div>
+      <div class="box"><div class="label">EMA200</div><div class="value" id="ema">—</div></div>
+    </div>
+
+    <div class="btns">
+      <button id="refresh">دریافت سیگنال</button>
+      <button class="secondary" id="notify">فعال‌کردن هشدار گوشی</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row"><strong>تنظیم اتصال</strong><span class="tag">Twelve Data</span></div>
+    <div style="margin-top:11px"><input id="apiKey" type="password" placeholder="API Key را اینجا وارد کن"></div>
+    <div class="features">
+      <span class="tag">EMA 200</span><span class="tag">RSI 14</span><span class="tag">BOS 10</span>
+      <span class="tag">FVG 8</span><span class="tag">Order Block 8</span><span class="tag">ATR 14</span>
+    </div>
+    <div class="small" style="margin-top:10px">
+      کلید فقط داخل همین مرورگر ذخیره می‌شود. برای استفاده واقعی، داده زنده باید از سرویس داده معتبر بیاید.
+      این نسخه «سیگنال‌فقط» است و هیچ معامله‌ای در بروکر باز نمی‌کند.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row"><strong>وضعیت موتور</strong><span class="tag" id="bars">Bars: —</span></div>
+    <div class="small" id="engine">Engine idle</div>
+    <div class="log" id="log" style="margin-top:10px">آماده.</div>
+  </div>
+
+  <div class="small" style="text-align:center;margin-top:18px">
+    BARDIA AI v2 • ابزار سیگنال است، نه تضمین سود. قبل از استفاده با پول واقعی، روی دمو و داده تاریخی تست شود.
+  </div>
+</div>
+
+<script>
+const KEY="bardia_api_key_v2";
+const state={ lastSignal:null, timer:null };
+const $=id=>document.getElementById(id);
+$("apiKey").value=localStorage.getItem(KEY)||"";
+
+function log(x){ const d=new Date().toLocaleTimeString("fa-IR"); $("log").textContent=`[${d}] ${x}\n`+$("log").textContent; }
+function num(x,d=2){ return Number.isFinite(x)?x.toFixed(d):"—"; }
+function setStatus(s, reason){
+  $("status").textContent=s;
+  $("status").className="status "+(s==="BUY"?"buy":s==="SELL"?"sell":"wait");
+  $("reason").textContent=reason||"";
+}
+function saveKey(){ localStorage.setItem(KEY,$("apiKey").value.trim()); }
+
+async function fetchBars(){
+  const key=$("apiKey").value.trim();
+  if(!key) throw new Error("API Key وارد نشده.");
+  saveKey();
+  const url=`https://api.twelvedata.com/time_series?symbol=XAU/USD&interval=5min&outputsize=260&order=asc&apikey=${encodeURIComponent(key)}`;
+  const r=await fetch(url,{cache:"no-store"});
+  if(!r.ok) throw new Error("خطای شبکه: "+r.status);
+  const j=await r.json();
+  if(j.status==="error" || !j.values) throw new Error(j.message||"داده‌ای دریافت نشد.");
+  return j.values.map(v=>({t:v.datetime,o:+v.open,h:+v.high,l:+v.low,c:+v.close})).filter(v=>[v.o,v.h,v.l,v.c].every(Number.isFinite));
+}
+
+function ema(values,p){
+  const a=2/(p+1); let e=values[0];
+  for(let i=1;i<values.length;i++) e=values[i]*a+e*(1-a);
+  return e;
+}
+function rsi(vals,p=14){
+  let gain=0,loss=0;
+  for(let i=1;i<=p;i++){let ch=vals[i]-vals[i-1];gain+=Math.max(ch,0);loss+=Math.max(-ch,0)}
+  let ag=gain/p, al=loss/p;
+  for(let i=p+1;i<vals.length;i++){let ch=vals[i]-vals[i-1];ag=(ag*(p-1)+Math.max(ch,0))/p;al=(al*(p-1)+Math.max(-ch,0))/p}
+  if(al===0) return 100;
+  return 100-(100/(1+ag/al));
+}
+function atr(bars,p=14){
+  const tr=[];
+  for(let i=1;i<bars.length;i++){
+    const b=bars[i], prev=bars[i-1];
+    tr.push(Math.max(b.h-b.l,Math.abs(b.h-prev.c),Math.abs(b.l-prev.c)));
+  }
+  let a=tr.slice(0,p).reduce((x,y)=>x+y,0)/p;
+  for(let i=p;i<tr.length;i++) a=(a*(p-1)+tr[i])/p;
+  return a;
+}
+function bullBOS(b){
+  const c1=b[b.length-2].c, start=b.length-2-10;
+  let hh=-Infinity;
+  for(let i=start;i<=b.length-3;i++) hh=Math.max(hh,b[i].h);
+  return c1>hh;
+}
+function bearBOS(b){
+  const c1=b[b.length-2].c, start=b.length-2-10;
+  let ll=Infinity;
+  for(let i=start;i<=b.length-3;i++) ll=Math.min(ll,b[i].l);
+  return c1<ll;
+}
+function bullFVG(b, a){
+  for(let i=1;i<=8;i++){
+    const right=b[b.length-1-i], left=b[b.length-3-i];
+    if(right.l-left.h>=a*.10) return {ok:true,size:right.l-left.h};
+  } return {ok:false,size:0};
+}
+function bearFVG(b, a){
+  for(let i=1;i<=8;i++){
+    const right=b[b.length-1-i], left=b[b.length-3-i];
+    if(left.l-right.h>=a*.10) return {ok:true,size:left.l-right.h};
+  } return {ok:false,size:0};
+}
+function bullOB(b){
+  for(let i=2;i<=9;i++){
+    const x=b[b.length-1-i];
+    if(x.c<x.o) return x;
+  } return null;
+}
+function bearOB(b){
+  for(let i=2;i<=9;i++){
+    const x=b[b.length-1-i];
+    if(x.c>x.o) return x;
+  } return null;
+}
+function strength(direction, close, e, r, a, bos, fvg, ob){
+  let s=0;
+  const trendGap=Math.abs(close-e)/a;
+  s += Math.min(25, 12 + trendGap*7);
+  const rsiEdge=direction==="BUY" ? Math.max(0,r-50) : Math.max(0,50-r);
+  s += Math.min(20, 10 + rsiEdge*.5);
+  s += bos?20:0;
+  s += fvg?20:0;
+  s += ob?15:0;
+  return Math.max(0,Math.min(100,s));
+}
+function signal(b){
+  if(b.length<220) throw new Error("برای EMA200 داده کافی نیست.");
+  const closes=b.map(x=>x.c);
+  const close=b[b.length-2].c, ask=close, bid=close;
+  const e=ema(closes.slice(0,-1),200);
+  const r=rsi(closes.slice(0,-1),14);
+  const a=atr(b.slice(0,-1),14);
+  const buyTrend=close>e, sellTrend=close<e;
+  const bb=bullBOS(b), sb=bearBOS(b);
+  const bf=bullFVG(b,a), sf=bearFVG(b,a);
+  const bo=bullOB(b), so=bearOB(b);
+
+  let dir="WAIT", reason="شرایط کامل سیگنال برقرار نیست.", sl=0,tp2=0,tp1=0,score=0;
+  if(buyTrend && r>=55 && bb && bf.ok && bo){
+    dir="BUY";
+    sl=Math.min(bo.l,bid-a*1.5)-0.02;
+    if(sl<bid){
+      tp2=bid+(bid-sl)*2; tp1=bid+(bid-sl);
+      score=strength(dir,close,e,r,a,bb,bf.ok,bo);
+      reason=`BUY: Trend + RSI + BOS + FVG + OB`;
+    } else dir="WAIT";
+  } else if(sellTrend && r<=45 && sb && sf.ok && so){
+    dir="SELL";
+    sl=Math.max(so.h,ask+a*1.5)+0.02;
+    if(sl>ask){
+      tp2=ask-(sl-ask)*2; tp1=ask-(sl-ask);
+      score=strength(dir,close,e,r,a,sb,sf.ok,so);
+      reason=`SELL: Trend + RSI + BOS + FVG + OB`;
+    } else dir="WAIT";
+  }
+  if(dir!=="WAIT" && score<70){ dir="WAIT"; reason="ستاپ ضعیف است؛ فیلتر قدرت فعال شد."; sl=tp1=tp2=0; }
+  return {dir,entry:close,sl,tp1,tp2,rr:2,score,rsi:r,ema:e,atr:a,reason};
+}
+
+async function run(){
+  $("refresh").disabled=true; $("conn").textContent="CONNECTING…"; $("engine").textContent="درحال دریافت XAU/USD M5";
+  try{
+    const bars=await fetchBars();
+    $("bars").textContent=`Bars: ${bars.length}`;
+    const s=signal(bars);
+    setStatus(s.dir,s.reason);
+    $("entry").textContent=num(s.entry);
+    $("sl").textContent=s.sl?num(s.sl):"—";
+    $("tp1").textContent=s.tp1?num(s.tp1):"—";
+    $("tp2").textContent=s.tp2?num(s.tp2):"—";
+    $("rr").textContent=s.dir==="WAIT"?"—":"1 : 2";
+    $("strength").textContent=s.dir==="WAIT"?"—":Math.round(s.score)+"/100";
+    $("rsi").textContent=num(s.rsi,1);
+    $("ema").textContent=num(s.ema);
+    $("updated").textContent="آخرین داده: "+new Date().toLocaleString("fa-IR");
+    $("conn").textContent="ONLINE";
+    $("engine").textContent="EMA200 / RSI14 / BOS10 / FVG8 / OB8 / ATR14";
+    log(`${s.dir} | Entry ${num(s.entry)} | Strength ${s.score?Math.round(s.score):"—"}`);
+    if(s.dir!=="WAIT" && s.dir!==state.lastSignal){
+      state.lastSignal=s.dir;
+      if("Notification" in window && Notification.permission==="granted"){
+        new Notification(`BARDIA AI — ${s.dir}`,{body:`XAUUSD M5\nEntry ${num(s.entry)} | SL ${num(s.sl)} | TP2 ${num(s.tp2)}`});
+      }
+    }
+  }catch(e){
+    $("conn").textContent="ERROR"; $("engine").textContent="اتصال ناموفق";
+    setStatus("WAIT",e.message);
+    log("ERROR: "+e.message);
+  }finally{ $("refresh").disabled=false; }
+}
+$("refresh").addEventListener("click",run);
+$("apiKey").addEventListener("change",saveKey);
+$("notify").addEventListener("click",async()=>{
+  if(!("Notification" in window)){ alert("مرورگر این گوشی Notification را پشتیبانی نمی‌کند."); return; }
+  const p=await Notification.requestPermission();
+  alert(p==="granted"?"هشدار گوشی فعال شد.":"اجازه هشدار داده نشد.");
+});
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
