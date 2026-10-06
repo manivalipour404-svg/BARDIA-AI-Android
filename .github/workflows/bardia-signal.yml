@@ -246,10 +246,10 @@ jobs:
 
               print(msg)
 
- else:
-    print(
-        f"WAIT | Entry={close:.2f} | "
-        f"RSI={r:.1f} | EMA200={ema200:.2f} | "
-        f"M15={m15_trend} | M15_Close={m15_close:.2f} | "
-        f"M15_EMA50={m15_ema50:.2f}"
-    )
+          else:
+              print(
+                  f"WAIT | Entry={close:.2f} | "
+                  f"RSI={r:.1f} | EMA200={ema200:.2f} | "
+                  f"M15={m15_trend} | M15_Close={m15_close:.2f} | "
+                  f"M15_EMA50={m15_ema50:.2f}"
+              )
