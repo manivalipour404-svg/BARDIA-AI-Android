@@ -253,3 +253,4 @@ jobs:
                   f"M15={m15_trend} | M15_Close={m15_close:.2f} | "
                   f"M15_EMA50={m15_ema50:.2f}"
               )
+          PY
