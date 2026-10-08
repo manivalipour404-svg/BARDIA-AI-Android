@@ -272,7 +272,7 @@ jobs:
               buy_score >= 75
               and close > ema200
               and m15_trend == "BULLISH"
-              and r >= 50
+              and r >= 52
               and sum([
                   bull_bos,
                   fvg_bull,
@@ -305,7 +305,7 @@ jobs:
               sell_score >= 75
               and close < ema200
               and m15_trend == "BEARISH"
-              and r <= 50
+              and r <= 48
               and sum([
                   bear_bos,
                   fvg_bear,
