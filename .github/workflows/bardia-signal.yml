@@ -269,12 +269,15 @@ jobs:
           # -------------------------
 
           if (
-              buy_score >= 80
+              buy_score >= 75
               and close > ema200
               and m15_trend == "BULLISH"
-              and r >= 52
-              and bull_bos
-              and (fvg_bull or bull_ob)
+              and r >= 50
+              and sum([
+                  bull_bos,
+                  fvg_bull,
+                  bool(bull_ob)
+              ]) >= 2
           ):
               signal = "BUY"
               score = buy_score
@@ -299,12 +302,15 @@ jobs:
           # -------------------------
 
           elif (
-              sell_score >= 80
+              sell_score >= 75
               and close < ema200
               and m15_trend == "BEARISH"
-              and r <= 48
-              and bear_bos
-              and (fvg_bear or bear_ob)
+              and r <= 50
+              and sum([
+                  bear_bos,
+                  fvg_bear,
+                  bool(bear_ob)
+              ]) >= 2
           ):
               signal = "SELL"
               score = sell_score
