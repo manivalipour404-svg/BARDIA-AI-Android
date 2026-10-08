@@ -130,38 +130,59 @@ jobs:
           r = rsi(closes, 14)
           a = atr(bars, 14)
 
+          # فقط کندل بسته‌شده
           b = bars[-2]
-          prev = bars[-3]
 
-          recent_high = max(x["h"] for x in bars[-12:-2])
-          recent_low = min(x["l"] for x in bars[-12:-2])
+          # -------------------------
+          # Market Structure / BOS
+          # -------------------------
+
+          recent_high = max(
+              x["h"] for x in bars[-12:-2]
+          )
+
+          recent_low = min(
+              x["l"] for x in bars[-12:-2]
+          )
 
           bull_bos = b["c"] > recent_high
           bear_bos = b["c"] < recent_low
 
+          # -------------------------
+          # FVG
+          # فقط با کندل‌های بسته‌شده
+          # -------------------------
+
           fvg_bull = (
-              bars[-3]["h"] < bars[-1]["l"]
-              and (bars[-1]["l"] - bars[-3]["h"]) >= 0.10 * a
+              bars[-4]["h"] < bars[-2]["l"]
+              and
+              (bars[-2]["l"] - bars[-4]["h"]) >= 0.10 * a
           )
 
           fvg_bear = (
-              bars[-3]["l"] > bars[-1]["h"]
-              and (bars[-3]["l"] - bars[-1]["h"]) >= 0.10 * a
+              bars[-4]["l"] > bars[-2]["h"]
+              and
+              (bars[-4]["l"] - bars[-2]["h"]) >= 0.10 * a
           )
 
-          ob = bars[-9:-1]
+          # -------------------------
+          # Order Block
+          # فقط کندل‌های قبل از سیگنال
+          # -------------------------
 
-          bull_ob = max(
-              (x for x in ob if x["c"] < x["o"]),
-              key=lambda x: x["h"],
-              default=None
-          )
+          ob = bars[-10:-2]
 
-          bear_ob = min(
-              (x for x in ob if x["c"] > x["o"]),
-              key=lambda x: x["l"],
-              default=None
-          )
+          bull_ob = None
+          for x in reversed(ob):
+              if x["c"] < x["o"]:
+                  bull_ob = x
+                  break
+
+          bear_ob = None
+          for x in reversed(ob):
+              if x["c"] > x["o"]:
+                  bear_ob = x
+                  break
 
           close = b["c"]
 
@@ -170,58 +191,150 @@ jobs:
           sl = None
           tp1 = None
           tp2 = None
-          score = 0
+
+          # -------------------------
+          # BUY SCORE
+          # -------------------------
+
+          buy_score = 0
 
           if close > ema200:
-              score += 20
+              buy_score += 20
 
-          if r >= 55:
-              score += 20
+          if m15_trend == "BULLISH":
+              buy_score += 20
+
+          if r >= 52:
+              buy_score += 15
 
           if bull_bos:
-              score += 20
+              buy_score += 25
 
           if fvg_bull:
-              score += 20
+              buy_score += 10
 
           if bull_ob:
-              score += 20
+              buy_score += 10
 
-          if score >= 70 and close > ema200 and r >= 55 and bull_bos and fvg_bull:
+          # -------------------------
+          # SELL SCORE
+          # -------------------------
+
+          sell_score = 0
+
+          if close < ema200:
+              sell_score += 20
+
+          if m15_trend == "BEARISH":
+              sell_score += 20
+
+          if r <= 48:
+              sell_score += 15
+
+          if bear_bos:
+              sell_score += 25
+
+          if fvg_bear:
+              sell_score += 10
+
+          if bear_ob:
+              sell_score += 10
+
+          # -------------------------
+          # DIAGNOSTIC
+          # -------------------------
+
+          print(
+              f"BUY CHECK | Score={buy_score}/100 | "
+              f"EMA={'YES' if close > ema200 else 'NO'} | "
+              f"M15={'YES' if m15_trend == 'BULLISH' else 'NO'} | "
+              f"RSI={'YES' if r >= 52 else 'NO'} | "
+              f"BOS={'YES' if bull_bos else 'NO'} | "
+              f"FVG={'YES' if fvg_bull else 'NO'} | "
+              f"OB={'YES' if bull_ob else 'NO'}"
+          )
+
+          print(
+              f"SELL CHECK | Score={sell_score}/100 | "
+              f"EMA={'YES' if close < ema200 else 'NO'} | "
+              f"M15={'YES' if m15_trend == 'BEARISH' else 'NO'} | "
+              f"RSI={'YES' if r <= 48 else 'NO'} | "
+              f"BOS={'YES' if bear_bos else 'NO'} | "
+              f"FVG={'YES' if fvg_bear else 'NO'} | "
+              f"OB={'YES' if bear_ob else 'NO'}"
+          )
+
+          # -------------------------
+          # BUY SIGNAL
+          # -------------------------
+
+          if (
+              buy_score >= 80
+              and close > ema200
+              and m15_trend == "BULLISH"
+              and r >= 52
+              and bull_bos
+              and (fvg_bull or bull_ob)
+          ):
               signal = "BUY"
+              score = buy_score
 
               ob_low = bull_ob["l"] if bull_ob else close
-              sl = min(ob_low, close - 1.5*a) - 0.02
+
+              sl = min(
+                  ob_low,
+                  close - 1.5 * a
+              ) - 0.02
+
               risk = close - sl
-              tp1 = close + risk
-              tp2 = close + 2*risk
 
-          else:
-              score = 0
+              if risk > 0:
+                  tp1 = close + risk
+                  tp2 = close + 2 * risk
+              else:
+                  signal = "WAIT"
 
-              if close < ema200:
-                  score += 20
+          # -------------------------
+          # SELL SIGNAL
+          # -------------------------
 
-              if r <= 45:
-                  score += 20
+          elif (
+              sell_score >= 80
+              and close < ema200
+              and m15_trend == "BEARISH"
+              and r <= 48
+              and bear_bos
+              and (fvg_bear or bear_ob)
+          ):
+              signal = "SELL"
+              score = sell_score
 
-              if bear_bos:
-                  score += 20
+              ob_high = bear_ob["h"] if bear_ob else close
 
-              if fvg_bear:
-                  score += 20
+              sl = max(
+                  ob_high,
+                  close + 1.5 * a
+              ) + 0.02
 
-              if bear_ob:
-                  score += 20
+              risk = sl - close
 
-              if score >= 70 and close < ema200 and r <= 45 and bear_bos and fvg_bear:
-                  signal = "SELL"
-
-                  ob_high = bear_ob["h"] if bear_ob else close
-                  sl = max(ob_high, close + 1.5*a) + 0.02
-                  risk = sl - close
+              if risk > 0:
                   tp1 = close - risk
-                  tp2 = close - 2*risk
+                  tp2 = close - 2 * risk
+              else:
+                  signal = "WAIT"
+
+          # -------------------------
+          # FINAL SIGNAL VALIDATION
+          # -------------------------
+
+          if signal != "WAIT":
+              if sl is None or tp1 is None or tp2 is None:
+                  signal = "WAIT"
+
+          # -------------------------
+          # TELEGRAM
+          # -------------------------
 
           if signal != "WAIT":
               msg = (
@@ -234,13 +347,18 @@ jobs:
                   f"RR: 1:2\n"
                   f"Strength: {score}/100\n"
                   f"RSI: {r:.1f}\n"
-                  f"EMA200: {ema200:.2f}"
+                  f"EMA200: {ema200:.2f}\n"
+                  f"M15: {m15_trend}"
               )
 
               tg = f"https://api.telegram.org/bot{token}/sendMessage"
+
               requests.post(
                   tg,
-                  data={"chat_id": chat_id, "text": msg},
+                  data={
+                      "chat_id": chat_id,
+                      "text": msg
+                  },
                   timeout=30
               )
 
@@ -250,7 +368,8 @@ jobs:
               print(
                   f"WAIT | Entry={close:.2f} | "
                   f"RSI={r:.1f} | EMA200={ema200:.2f} | "
-                  f"M15={m15_trend} | M15_Close={m15_close:.2f} | "
+                  f"M15={m15_trend} | "
+                  f"M15_Close={m15_close:.2f} | "
                   f"M15_EMA50={m15_ema50:.2f}"
               )
           PY
